@@ -14,6 +14,7 @@ type AdminSetPasswordData struct {
 	Password string `json:"password"`
 }
 
+//更新账号密码
 func (a *API) handleAdminSetPassword(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	username := vars["username"]
