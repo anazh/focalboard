@@ -10,7 +10,7 @@ import messages_nl from '../i18n/nl.json'
 import messages_ru from '../i18n/ru.json'
 import messages_oc from '../i18n/oc.json'
 import messages_tr from '../i18n/tr.json'
-import messages_zhHant from '../i18n/zh_Hant.json'
+import messages_zhHant from '../i18n/zh_Hans.json'
 
 export function getMessages(lang: string): {[key: string]: string} {
     switch (lang) {

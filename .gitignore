@@ -68,3 +68,4 @@ server/vendor
 .idea
 docker/certs
 docker/data
+webapp/package-lock.json
