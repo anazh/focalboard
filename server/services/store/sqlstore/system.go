@@ -1,7 +1,16 @@
+/*
+ * @Author: your name
+ * @Date: 2021-04-24 22:20:51
+ * @LastEditTime: 2021-04-26 19:42:55
+ * @LastEditors: Please set LastEditors
+ * @Description: In User Settings Edit
+ * @FilePath: \server\services\store\sqlstore\system.go
+ */
 package sqlstore
 
+//获取系统设置路径
 func (s *SQLStore) GetSystemSettings() (map[string]string, error) {
-	query := s.getQueryBuilder().Select("*").From(s.tablePrefix + "system_settings")
+	query := s.getQueryBuilder().Select("*").From(s.tablePrefix + "system_settings") //sql查询
 
 	rows, err := query.Query()
 	if err != nil {

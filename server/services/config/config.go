@@ -80,6 +80,7 @@ func ReadConfigFile() (*Configuration, error) {
 	return &configuration, nil
 }
 
+//清楚安全数据
 func removeSecurityData(config Configuration) Configuration {
 	clean := config
 	clean.Secret = "hidden"

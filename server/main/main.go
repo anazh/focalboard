@@ -26,8 +26,8 @@
 package main
 
 import (
-	"C"
-	"flag"
+	"C"    //作为动态库导出 startServer
+	"flag" //解析命令行参数
 	"log"
 	"os"
 	"os/signal"
@@ -46,6 +46,7 @@ const (
 	timeBetweenPidMonitoringChecks = 2 * time.Second
 )
 
+//判断进行是否在运行
 func isProcessRunning(pid int) bool {
 	process, err := os.FindProcess(pid)
 	if err != nil {
@@ -63,7 +64,7 @@ func monitorPid(pid int) {
 
 	go func() {
 		for {
-			if !isProcessRunning(pid) {
+			if !isProcessRunning(pid) { //如果检测到进程未进行，直接退出？
 				log.Printf("Monitored process not found, exiting.")
 				os.Exit(1)
 			}
@@ -73,6 +74,7 @@ func monitorPid(pid int) {
 	}()
 }
 
+//打印消息
 func logInfo() {
 	log.Println("Focalboard Server")
 	log.Println("Version: " + model.CurrentVersion)
@@ -93,11 +95,11 @@ func main() {
 	}
 
 	// Command line args
-	pMonitorPid := flag.Int("monitorpid", -1, "a process ID")
-	pPort := flag.Int("port", config.Port, "the port number")
-	pSingleUser := flag.Bool("single-user", false, "single user mode")
-	pDBType := flag.String("dbtype", "", "Database type")
-	pDBConfig := flag.String("dbconfig", "", "Database config")
+	pMonitorPid := flag.Int("monitorpid", -1, "a process ID")          //监控的id
+	pPort := flag.Int("port", config.Port, "the port number")          //使用的端口
+	pSingleUser := flag.Bool("single-user", false, "single user mode") //是否是单人模式
+	pDBType := flag.String("dbtype", "", "Database type")              //数据库类型
+	pDBConfig := flag.String("dbconfig", "", "Database config")        //数据库配置
 	flag.Parse()
 
 	singleUser := false
@@ -106,7 +108,7 @@ func main() {
 	}
 
 	singleUserToken := ""
-	if singleUser {
+	if singleUser { //如果是单人类型，需要预先在环境中设置用户的TOKEN
 		singleUserToken = os.Getenv("FOCALBOARD_SINGLE_USER_TOKEN")
 		if len(singleUserToken) < 1 {
 			log.Fatal("The FOCALBOARD_SINGLE_USER_TOKEN environment variable must be set for single user mode ")
@@ -115,7 +117,7 @@ func main() {
 		log.Printf("Single user mode")
 	}
 
-	if pMonitorPid != nil && *pMonitorPid > 0 {
+	if pMonitorPid != nil && *pMonitorPid > 0 { //去监控进程
 		monitorPid(*pMonitorPid)
 	}
 

@@ -47,23 +47,24 @@ type Server struct {
 	appBuilder      func() *app.App
 }
 
+//web服务
 func New(cfg *config.Configuration, singleUserToken string) (*Server, error) {
-	logger, err := zap.NewProduction()
+	logger, err := zap.NewProduction() //初始化日志引擎
 	if err != nil {
 		return nil, err
 	}
 
-	store, err := sqlstore.New(cfg.DBType, cfg.DBConfigString, cfg.DBTablePrefix)
+	store, err := sqlstore.New(cfg.DBType, cfg.DBConfigString, cfg.DBTablePrefix) //初始化的数据库
 	if err != nil {
 		log.Print("Unable to start the database", err)
 		return nil, err
 	}
 
-	auth := auth.New(cfg, store)
+	auth := auth.New(cfg, store) //验证服务？
 
-	wsServer := ws.NewServer(auth, singleUserToken)
+	wsServer := ws.NewServer(auth, singleUserToken) //websocket
 
-	filesBackendSettings := filesstore.FileBackendSettings{}
+	filesBackendSettings := filesstore.FileBackendSettings{} //本地的文件存储
 	filesBackendSettings.DriverName = "local"
 	filesBackendSettings.Directory = cfg.FilesPath
 	filesBackend, appErr := filesstore.NewFileBackend(filesBackendSettings)
@@ -86,16 +87,16 @@ func New(cfg *config.Configuration, singleUserToken string) (*Server, error) {
 	appBuilder().GetRootWorkspace()
 
 	webServer := web.NewServer(cfg.WebPath, cfg.ServerRoot, cfg.Port, cfg.UseSSL, cfg.LocalOnly)
-	webServer.AddRoutes(wsServer)
-	webServer.AddRoutes(api)
+	webServer.AddRoutes(wsServer) //添加websocket路径
+	webServer.AddRoutes(api)      //添加http路径
 
 	// Init telemetry
-	settings, err := store.GetSystemSettings()
+	settings, err := store.GetSystemSettings() //系统设置参数
 	if err != nil {
 		return nil, err
 	}
 
-	telemetryID := settings["TelemetryID"]
+	telemetryID := settings["TelemetryID"] //
 	if len(telemetryID) == 0 {
 		telemetryID = uuid.New().String()
 		err := store.SetSystemSetting("TelemetryID", uuid.New().String())
@@ -104,28 +105,28 @@ func New(cfg *config.Configuration, singleUserToken string) (*Server, error) {
 		}
 	}
 
-	registeredUserCount, err := appBuilder().GetRegisteredUserCount()
+	registeredUserCount, err := appBuilder().GetRegisteredUserCount() //注册的用户数
 	if err != nil {
 		return nil, err
 	}
 
-	dailyActiveUsers, err := appBuilder().GetDailyActiveUsers()
+	dailyActiveUsers, err := appBuilder().GetDailyActiveUsers() //日活用户数
 	if err != nil {
 		return nil, err
 	}
 
-	weeklyActiveUsers, err := appBuilder().GetWeeklyActiveUsers()
+	weeklyActiveUsers, err := appBuilder().GetWeeklyActiveUsers() //周活
 	if err != nil {
 		return nil, err
 	}
 
-	monthlyActiveUsers, err := appBuilder().GetMonthlyActiveUsers()
+	monthlyActiveUsers, err := appBuilder().GetMonthlyActiveUsers() //月活
 	if err != nil {
 		return nil, err
 	}
 
 	telemetryService := telemetry.New(telemetryID, zap.NewStdLog(logger))
-	telemetryService.RegisterTracker("server", func() map[string]interface{} {
+	telemetryService.RegisterTracker("server", func() map[string]interface{} { //注册服务信息的函数
 		return map[string]interface{}{
 			"version":          appModel.CurrentVersion,
 			"build_number":     appModel.BuildNumber,
@@ -134,7 +135,7 @@ func New(cfg *config.Configuration, singleUserToken string) (*Server, error) {
 			"operating_system": runtime.GOOS,
 		}
 	})
-	telemetryService.RegisterTracker("config", func() map[string]interface{} {
+	telemetryService.RegisterTracker("config", func() map[string]interface{} { //相关配置的函数
 		return map[string]interface{}{
 			"serverRoot":  cfg.ServerRoot == config.DefaultServerRoot,
 			"port":        cfg.Port == config.DefaultPort,
@@ -143,7 +144,7 @@ func New(cfg *config.Configuration, singleUserToken string) (*Server, error) {
 			"single_user": len(singleUserToken) > 0,
 		}
 	})
-	telemetryService.RegisterTracker("activity", func() map[string]interface{} {
+	telemetryService.RegisterTracker("activity", func() map[string]interface{} { //活动人员统计
 		return map[string]interface{}{
 			"registered_users":     registeredUserCount,
 			"daily_active_users":   dailyActiveUsers,
@@ -152,17 +153,17 @@ func New(cfg *config.Configuration, singleUserToken string) (*Server, error) {
 		}
 	})
 
-	server := Server{
-		config:       cfg,
-		wsServer:     wsServer,
-		webServer:    webServer,
-		store:        store,
-		filesBackend: filesBackend,
-		telemetry:    telemetryService,
-		logger:       logger,
-		localRouter:  localRouter,
-		api:          api,
-		appBuilder:   appBuilder,
+	server := Server{ //服务集成
+		config:       cfg,              //配置
+		wsServer:     wsServer,         //websocket
+		webServer:    webServer,        //http服务
+		store:        store,            //数据库
+		filesBackend: filesBackend,     //资源文件
+		telemetry:    telemetryService, //回调,插件？
+		logger:       logger,           //日志
+		localRouter:  localRouter,      //本地管理的API
+		api:          api,              //对外API
+		appBuilder:   appBuilder,       //
 	}
 
 	server.initHandlers()
@@ -173,15 +174,15 @@ func New(cfg *config.Configuration, singleUserToken string) (*Server, error) {
 func (s *Server) Start() error {
 	s.logger.Info("Server.Start")
 
-	s.webServer.Start()
+	s.webServer.Start() //启动http服务
 
-	if s.config.EnableLocalMode {
+	if s.config.EnableLocalMode { //本地服务
 		if err := s.startLocalModeServer(); err != nil {
 			return err
 		}
 	}
 
-	s.cleanUpSessionsTask = scheduler.CreateRecurringTask("cleanUpSessions", func() {
+	s.cleanUpSessionsTask = scheduler.CreateRecurringTask("cleanUpSessions", func() { //清楚session缓存任务
 		secondsAgo := int64(60 * 60 * 24 * 31)
 		if secondsAgo < s.config.SessionExpireTime {
 			secondsAgo = s.config.SessionExpireTime
@@ -191,7 +192,7 @@ func (s *Server) Start() error {
 		}
 	}, 10*time.Minute)
 
-	if s.config.Telemetry {
+	if s.config.Telemetry { //
 		firstRun := utils.MillisFromTime(time.Now())
 		s.telemetry.RunTelemetryJob(firstRun)
 	}
@@ -199,12 +200,12 @@ func (s *Server) Start() error {
 	return nil
 }
 
-func (s *Server) Shutdown() error {
+func (s *Server) Shutdown() error { //关闭服务
 	if err := s.webServer.Shutdown(); err != nil {
 		return err
 	}
 
-	s.stopLocalModeServer()
+	s.stopLocalModeServer() //禁止本地服务
 
 	if s.cleanUpSessionsTask != nil {
 		s.cleanUpSessionsTask.Cancel()

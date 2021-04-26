@@ -1,3 +1,11 @@
+/*
+ * @Author: your name
+ * @Date: 2021-04-24 22:20:51
+ * @LastEditTime: 2021-04-26 22:30:26
+ * @LastEditors: Please set LastEditors
+ * @Description: In User Settings Edit
+ * @FilePath: \server\server\initHandlers.go
+ */
 package server
 
 import (
@@ -6,9 +14,10 @@ import (
 	"github.com/mattermost/focalboard/server/einterfaces"
 )
 
+//启动服务
 func (s *Server) initHandlers() {
 	cfg := s.config
-	if cfg.AuthMode == "mattermost" && mattermostAuth != nil {
+	if cfg.AuthMode == "mattermost" && mattermostAuth != nil { //如果是mattermost 认证模式
 		log.Println("Using Mattermost Auth")
 		params := einterfaces.MattermostAuthParameters{
 			ServerRoot:      cfg.ServerRoot,
